@@ -187,25 +187,22 @@ namespace ReduxCore
                 subscriptions.Add(subscription);
                 return () => { subscriptions.Remove(subscription); };
             }
+
             /// <summary>
             /// 派遣分发器
             /// </summary>
             /// <param name="action"></param>
             public void Dispatch(Object action)
             {
-                state = rootReducer(state, action);
-                //此部分改为异步消息分发。
-
-                Parallel.ForEach(subscriptions, new Action<StateChangedSubscriber<State>>((subscribtion) =>
+                Task.Factory.StartNew(() =>
                 {
-                    if(!(action is ISteal))
-                        subscribtion(state,action);
-                }));
-
-                //foreach (var subscribtion in subscriptions)
-                //{
-                //    subscribtion(state);
-                //}
+                    state = rootReducer(state, action);
+                    Parallel.ForEach(subscriptions, new Action<StateChangedSubscriber<State>>((subscribtion) =>
+                    {
+                        if (!(action is ISteal))
+                            subscribtion(state, action);
+                    }));
+                });
             }
             /// <summary>
             /// 获取当前包状态
