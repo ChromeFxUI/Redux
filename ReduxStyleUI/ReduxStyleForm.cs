@@ -6,8 +6,8 @@ namespace ReduxStyleUI
 {
     public partial class ReduxStyleForm<State> : ChromFXBaseForm where State : struct
     {
-        private IBasePackage<State> store;
-        public virtual IBasePackage<State> Store
+        private Package<State> store;
+        public virtual Package<State> Store
         {
             private set
             {
@@ -31,7 +31,7 @@ namespace ReduxStyleUI
 
         }
 
-        public ReduxStyleForm(IBasePackage<State> store, string initialUrl)
+        public ReduxStyleForm(Package<State> store, string initialUrl)
             : base(initialUrl)
         {
             Store = store;
