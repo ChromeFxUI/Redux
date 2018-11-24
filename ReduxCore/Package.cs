@@ -7,7 +7,7 @@ using static ReduxCore.Broadcaster;
 
 namespace ReduxCore
 {
-    public class Package<State>:IBasePackage<State>
+    public class Package<State>:IBasePackage<State> where State : struct, IState
     {
         /// <summary>
         /// 获取状态委托
@@ -49,6 +49,7 @@ namespace ReduxCore
 
         public Package(ElementReducer<State> rootReducer) : this(rootReducer.Get())
         {
+
         }
 
         public Package(ComposableReducer<State> rootReducer) : this(rootReducer.Get())
@@ -194,7 +195,27 @@ namespace ReduxCore
             /// <param name="action"></param>
             public void Dispatch(Object action)
             {
-                Task.Factory.StartNew(() =>
+                //Task.Factory.StartNew(() =>
+                //{
+                //    state = rootReducer(state, action);
+                //    Parallel.ForEach(subscriptions, new Action<StateChangedSubscriber<State>>((subscribtion) =>
+                //    {
+                //        if (!(action is ISteal))
+                //            subscribtion(state, action);
+                //    }));
+                //});
+
+                state = rootReducer(state, action);
+                Parallel.ForEach(subscriptions, new Action<StateChangedSubscriber<State>>((subscribtion) =>
+                {
+                    if (!(action is ISteal))
+                        subscribtion(state, action);
+                }));
+            }
+
+            public Task DispatchTask(Object action)
+            {
+                return new Task(() =>
                 {
                     state = rootReducer(state, action);
                     Parallel.ForEach(subscriptions, new Action<StateChangedSubscriber<State>>((subscribtion) =>
@@ -204,6 +225,7 @@ namespace ReduxCore
                     }));
                 });
             }
+
             /// <summary>
             /// 获取当前包状态
             /// </summary>

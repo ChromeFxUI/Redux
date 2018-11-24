@@ -4,7 +4,7 @@ using ReduxCore;
 
 namespace ReduxStyleUI.XP
 {
-    public partial class ReduxStyleForm<State> : ChromFXBaseForm where State : struct
+    public partial class ReduxStyleForm<State> : ChromFXBaseForm where State : struct,IState
     {
         private Package<State> store;
         public virtual Package<State> Store

@@ -11,7 +11,7 @@ namespace ReduxCore
     /// 复合分流器
     /// </summary>
     /// <typeparam name="State"></typeparam>
-    public class ComposableReducer<State>
+    public class ComposableReducer<R>:State<R> where R :IState
     {
         /// <summary>
         /// 属性分流器集
@@ -20,14 +20,15 @@ namespace ReduxCore
         /// <summary>
         /// 状态初始化
         /// </summary>
-        private readonly Func<State> stateInitializer;
+        private readonly Func<R> stateInitializer;
 
         public ComposableReducer()
         {
-            stateInitializer = () => default(State);
+            stateInitializer = () =>
+            default(R);
         }
 
-        public ComposableReducer(Func<State> initializer)
+        public ComposableReducer(Func<R> initializer)
         {
             this.stateInitializer = initializer;
         }
@@ -38,29 +39,12 @@ namespace ReduxCore
         /// <param name="composer"></param>
         /// <param name="reducer"></param>
         /// <returns></returns>
-        public ComposableReducer<State> Diverter<T>(Expression<Func<State, T>> composer, ElementReducer<T> reducer)
+        public ComposableReducer<R> Diverter<T>(Expression<Func<State<R>,T>> composer, ElementReducer<T> reducer) where T:IState
         {
             return Diverter(composer, reducer.Get());
         }
-        /// <summary>
-        /// 分流器
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="composer"></param>
-        /// <param name="reducer"></param>
-        /// <returns></returns>
-        public ComposableReducer<State> Diverter<T>(Expression<Func<State, T>> composer, ComposableReducer<T> reducer)
-        {
-            return Diverter(composer, reducer.Get());
-        }
-        /// <summary>
-        /// 分流器
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="composer"></param>
-        /// <param name="reducer"></param>
-        /// <returns></returns>
-        public ComposableReducer<State> Diverter<T>(Expression<Func<State, T>> composer, Reducer<T> reducer)
+       
+        private ComposableReducer<R> Diverter<T>(Expression<Func<State<R>, T>> composer, Reducer<T> reducer) where T : IState
         {
             var memberExpr = composer.Body as MemberExpression;
             if (memberExpr == null)
@@ -81,23 +65,26 @@ namespace ReduxCore
         /// 获取当前分流器
         /// </summary>
         /// <returns></returns>
-        public Reducer<State> Get()
+        public Reducer<R> Get()
         {
-            return delegate (State state, Object action)
+            return delegate (R state, Object action)
             {
                 var result = action.GetType() == typeof(InitPackageAction) ? stateInitializer() : state;
                 foreach (var fieldReducer in fieldReducers)
                 {
+                    Type memberType = fieldReducer.Item1.FieldType;
                     var prevState = action.GetType() == typeof(InitPackageAction)
-                        ? null
+                        ? memberType.GetConstructors()[0].Invoke(null)
                         : fieldReducer.Item1.GetValue(state);
                     var newState = fieldReducer.Item2.DynamicInvoke(prevState, action);
-                    object boxer = result; //boxing to allow the next line work for both reference and value objects
+                    object boxer = result; 
                     fieldReducer.Item1.SetValue(boxer, newState);
-                    result = (State)boxer; // unbox, hopefully not too much performance penalty
+
+                    result = (R)boxer; 
                 }
                 return result;
             };
         }
+
     }
 }

@@ -7,7 +7,7 @@ namespace ReduxCore
     /// 元子分流器
     /// </summary>
     /// <typeparam name="State"></typeparam>
-    public class ElementReducer<State>
+    public class ElementReducer<State> where State : IState
     {
         /// <summary>
         /// 操作者
@@ -20,7 +20,10 @@ namespace ReduxCore
 
         public ElementReducer()
         {
-            stateInitializer = () => default(State);
+            stateInitializer = () =>
+            {
+                return default(State);
+            };
         }
 
         public ElementReducer(Func<State> initializer)
@@ -42,16 +45,78 @@ namespace ReduxCore
         /// 获取当前分流器
         /// </summary>
         /// <returns></returns>
-        public Reducer<State> Get()
+        public Reducer<State> Get() 
         {
             return delegate (State state, Object action)
             {
-                var prevState = action.GetType() == typeof(InitPackageAction) ? stateInitializer() : state;
-                if (handlers.ContainsKey(action.GetType()))
+                var prevState = state;// action.GetType() == typeof(InitPackageAction) ? stateInitializer() : state;
+                if (prevState.GetType().GetField("action") != null)
                 {
-                    var handler = handlers[action.GetType()];
-                    return (State)handler.DynamicInvoke(prevState, action);
+                    prevState.GetType().GetField("action").SetValue(prevState, action.GetType());
                 }
+
+                if (prevState.GetType().GetField("actionShortName") != null)
+                {
+                    prevState.GetType().GetField("actionShortName").SetValue(prevState, action.GetType().Name);
+                }
+
+                if (prevState.GetType().GetField("msg") != null)
+                {
+                    prevState.GetType().GetField("msg").SetValue(prevState, "正在处理动作"+ action.GetType().FullName);
+                }
+                if (prevState.GetType().GetField("status") != null)
+                {
+                    prevState.GetType().GetField("status").SetValue(prevState, ProcessEnum.Start);
+                }
+
+                if (prevState.GetType().GetField("state") != null)
+                {
+                    var preStateValue = prevState.GetType().GetField("state").GetValue(prevState);
+                    if(preStateValue == null)
+                    {
+                        prevState.GetType().GetField("state").SetValue(prevState, prevState.GetType().GetField("state").FieldType.GetConstructors()[0].Invoke(null));
+                    }
+                }
+
+                try
+                {
+                    if (handlers.ContainsKey(action.GetType()))
+                    {
+                        var handler = handlers[action.GetType()];
+                        prevState = (State)handler.DynamicInvoke(prevState, action);
+                    }
+
+                    if (prevState.GetType().GetField("msg") != null)
+                    {
+                        prevState.GetType().GetField("msg").SetValue(prevState, "已处理完动作" + action.GetType().FullName);
+                    }
+                    if (prevState.GetType().GetField("status") != null)
+                    {
+                        prevState.GetType().GetField("status").SetValue(prevState, ProcessEnum.Completed);
+                    }
+
+                    if (prevState.GetType().GetField("state") != null)
+                    {
+                        var preStateValue = prevState.GetType().GetField("state").GetValue(prevState);
+                        if (preStateValue == null)
+                        {
+                            prevState.GetType().GetField("state").SetValue(prevState, prevState.GetType().GetField("state").FieldType.GetConstructors()[0].Invoke(null));
+                        }
+                    }
+                }
+                catch(Exception ex)
+                {
+                    if (prevState.GetType().GetField("msg") != null)
+                    {
+                        prevState.GetType().GetField("msg").SetValue(prevState, "异常信息：\r\n" + ex.StackTrace);
+                    }
+                    if (prevState.GetType().GetField("status") != null)
+                    {
+                        prevState.GetType().GetField("status").SetValue(prevState, ProcessEnum.Error);
+                    }
+                }
+                
+
                 return prevState;
             };
         }
