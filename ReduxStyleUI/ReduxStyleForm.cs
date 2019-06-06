@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using ReduxCore;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -9,7 +10,6 @@ namespace ReduxStyleUI
 {
     public partial class ReduxStyleForm<State> : ChromFXBaseForm where State : struct,IState
     {
-        private State preStore;
         private Package<State> store;
         public virtual Package<State> Store
         {
@@ -45,29 +45,39 @@ namespace ReduxStyleUI
 
         }
 
+        private Dictionary<string, string> FieldValuePairs = new Dictionary<string, string>();
+
         public ReduxStyleForm(Package<State> store, string initialUrl)
             : base(initialUrl)
         {
             Store = store;
 
             Store.Subscribe((subscription, action) =>
-            {
-                //var state = store.GetState();
-                //string cmd = string.Format(jsDispatchMethod, JsonConvert.SerializeObject(state));
-                //ExecuteJavascript(cmd);
-
+            {               
                 var fields = subscription.GetType().GetFields();
                 Parallel.ForEach(fields, new Action<FieldInfo>((field) =>
                 {
-                    if (JsonConvert.SerializeObject(field.GetValue(subscription)) != JsonConvert.SerializeObject(field.GetValue(preStore)))
+                    if (FieldValuePairs.ContainsKey(field.Name))
                     {
-                        field.SetValue(preStore, field.GetValue(subscription));
-                        string cmd = string.Format(jsEmiterMethod, field.Name, JsonConvert.SerializeObject(field.GetValue(subscription)));
+                        if (JsonConvert.SerializeObject(field.GetValue(subscription)) != FieldValuePairs[field.Name])
+                        {
+                            var curValue = JsonConvert.SerializeObject(field.GetValue(subscription));
+                            string cmd = string.Format(jsEmiterMethod, field.Name, curValue);
+                            ExecuteJavascript(cmd);
+                            FieldValuePairs[field.Name] = curValue;
+                        }
+                    }
+                    else
+                    {
+                        var curValue = JsonConvert.SerializeObject(field.GetValue(subscription));
+                   
+                        string cmd = string.Format(jsEmiterMethod, field.Name, curValue);
                         ExecuteJavascript(cmd);
+                        FieldValuePairs.Add(field.Name, curValue);
                     }
 
                 }));
-   
+
             });
         }
 

@@ -75,7 +75,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\UI\ChromeFxUI\ChromFXUI\ChromFXUI.csproj">
+    <ProjectReference Include="..\..\ChromeFxUI\ChromFXUI\ChromFXUI.csproj">
       <Project>{f08bb3ec-8bd4-4af0-ac3f-49af44917324}</Project>
       <Name>ChromFXUI</Name>
     </ProjectReference>

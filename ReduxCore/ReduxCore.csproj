@@ -44,6 +44,10 @@
     <Compile Include="ComposableReducer.cs" />
     <Compile Include="ElementReducer.cs" />
     <Compile Include="IBasePackage.cs" />
+    <Compile Include="IMessage.cs">
+      <Generator>DtsGenerator</Generator>
+      <LastGenOutput>IMessage.cs.d.ts</LastGenOutput>
+    </Compile>
     <Compile Include="InitPackageAction.cs" />
     <Compile Include="IState.cs" />
     <Compile Include="ISteal.cs" />
@@ -55,6 +59,13 @@
     <Compile Include="StateChangedSubscriber.cs" />
     <Compile Include="Package.cs" />
     <Compile Include="Unsubscribe.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="IMessage.cs.d.ts">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>IMessage.cs</DependentUpon>
+    </TypeScriptCompile>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

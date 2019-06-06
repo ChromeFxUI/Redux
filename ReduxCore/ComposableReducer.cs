@@ -76,6 +76,13 @@ namespace ReduxCore
                     var prevState = action.GetType() == typeof(InitPackageAction)
                         ? memberType.GetConstructors()[0].Invoke(null)
                         : fieldReducer.Item1.GetValue(state);
+
+                    if(prevState is IMessage)
+                    {
+                        ((IMessage)prevState).Message.Msg = "";
+                        ((IMessage)prevState).Message.MsgType = MessageType.Undefine;
+                    }
+
                     var newState = fieldReducer.Item2.DynamicInvoke(prevState, action);
                     object boxer = result; 
                     fieldReducer.Item1.SetValue(boxer, newState);
